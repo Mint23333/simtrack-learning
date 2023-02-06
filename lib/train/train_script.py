@@ -18,7 +18,7 @@ from lib.train.actors import STARKLightningXtrtActor
 # for import modules
 import importlib
 
-#配置环境，建立对应模型的存储方法
+#配置环境，建立对应模型的存储方法，并存储相关的参数
 def run(settings): 
     settings.description = 'Training script for STARK-S, STARK-ST stage1, and STARK-ST stage2'
 
