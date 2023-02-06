@@ -37,7 +37,7 @@ def run_training(script_name, config_name, cudnn_benchmark=True, local_rank=-1, 
     # This is needed to avoid strange crashes related to opencv
     cv.setNumThreads(0)
 
-    torch.backends.cudnn.benchmark = cudnn_benchmark
+    torch.backends.cudnn.benchmark = cudnn_benchmark #让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速。
 
     print('script_name: {}.py  config_name: {}.yaml'.format(script_name, config_name))
 
@@ -48,6 +48,7 @@ def run_training(script_name, config_name, cudnn_benchmark=True, local_rank=-1, 
         else:
             init_seeds(base_seed)
 
+    #配置相关模型路径
     settings = ws_settings.Settings()
     settings.script_name = script_name
     settings.config_name = config_name
@@ -73,9 +74,9 @@ def run_training(script_name, config_name, cudnn_benchmark=True, local_rank=-1, 
 
     expr_func(settings)
 
-#根据experiment的不同建立不同的路径，用于存储对应的各类参数
+#填写和设定所选的模型及其相关的参数
 def main():
-    parser = argparse.ArgumentParser(description='Run a train scripts in train_settings.')
+    parser = argparse.ArgumentParser(description='Run a train scripts in train_settings.') #创建解析器
     parser.add_argument('--script', type=str, required=True, help='Name of the train script.')
     parser.add_argument('--config', type=str, required=True, help="Name of the config file.")
     parser.add_argument('--cudnn_benchmark', type=bool, default=True, help='Set cudnn benchmark on (1) or off (0) (default is on).')
@@ -88,9 +89,9 @@ def main():
     # for knowledge distillation
     parser.add_argument('--distill', type=int, choices=[0, 1], default=0)  # whether to use knowledge distillation
     parser.add_argument('--script_teacher', type=str, help='teacher script name')
-    parser.add_argument('--config_teacher', type=str, help='teacher yaml configure file name')
+    parser.add_argument('--config_teacher', type=str, help='teacher yaml configure file name') #添加参数
 
-    args = parser.parse_args()
+    args = parser.parse_args() #解析参数，将上述填写内容存起来
     if args.local_rank != -1:
         dist.init_process_group(backend='nccl')
         torch.cuda.set_device(args.local_rank)
@@ -99,7 +100,7 @@ def main():
     run_training(args.script, args.config, cudnn_benchmark=args.cudnn_benchmark,
                  local_rank=args.local_rank, save_dir=args.save_dir, base_seed=args.seed,
                  use_lmdb=args.use_lmdb, script_name_prv=args.script_prv, config_name_prv=args.config_prv,
-                 distill=args.distill, script_teacher=args.script_teacher, config_teacher=args.config_teacher)
+                 distill=args.distill, script_teacher=args.script_teacher, config_teacher=args.config_teacher) #将之前填写的参数传入该函数内运行
 
 
 if __name__ == '__main__':
