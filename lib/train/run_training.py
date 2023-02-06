@@ -66,14 +66,14 @@ def run_training(script_name, config_name, cudnn_benchmark=True, local_rank=-1, 
         if script_teacher is not None and config_teacher is not None:
             settings.project_path_teacher = 'train/{}/{}'.format(script_teacher, config_teacher)
         settings.cfg_file_teacher = os.path.join(prj_dir, 'experiments/%s/%s.yaml' % (script_teacher, config_teacher))
-        expr_module = importlib.import_module('lib.train.train_script_distill')
+        expr_module = importlib.import_module('lib.train.train_script_distill') #将ib.train.train_script_distill对应模型返回
     else:
-        expr_module = importlib.import_module('lib.train.train_script')
-    expr_func = getattr(expr_module, 'run')
+        expr_module = importlib.import_module('lib.train.train_script') #将ib.train.train_script对应模型返回
+    expr_func = getattr(expr_module, 'run') #将run函数返回给 expr_func。
 
     expr_func(settings)
 
-
+#根据experiment的不同建立不同的路径，用于存储对应的各类参数
 def main():
     parser = argparse.ArgumentParser(description='Run a train scripts in train_settings.')
     parser.add_argument('--script', type=str, required=True, help='Name of the train script.')
