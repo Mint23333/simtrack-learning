@@ -18,30 +18,30 @@ from lib.train.actors import STARKLightningXtrtActor
 # for import modules
 import importlib
 
-
-def run(settings):
+#配置环境，建立对应模型的存储方法
+def run(settings): 
     settings.description = 'Training script for STARK-S, STARK-ST stage1, and STARK-ST stage2'
 
     # update the default configs with config file
-    if not os.path.exists(settings.cfg_file):
+    if not os.path.exists(settings.cfg_file):   #如果settings.cfg_file不存在则继续运行
         raise ValueError("%s doesn't exist." % settings.cfg_file)
-    config_module = importlib.import_module("lib.config.%s.config" % settings.script_name)
-    cfg = config_module.cfg
+    config_module = importlib.import_module("lib.config.%s.config" % settings.script_name) #将选择模型的config返回
+    cfg = config_module.cfg #将该模型的cfg返回
     config_module.update_config_from_file(settings.cfg_file)
     if settings.local_rank in [-1, 0]:
         print("New configuration is shown below.")
         for key in cfg.keys():
-            print("%s configuration:" % key, cfg[key])
+            print("%s configuration:" % key, cfg[key]) #按顺序输出cfg内每个属性及对应的内容
             print('\n')
 
     # update settings based on cfg
     update_settings(settings, cfg)
 
     # Record the training log
-    log_dir = os.path.join(settings.save_dir, 'logs')
+    log_dir = os.path.join(settings.save_dir, 'logs') 
     if settings.local_rank in [-1, 0]:
         if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+            os.makedirs(log_dir) #递归创建多层目录
     settings.log_file = os.path.join(log_dir, "%s-%s.log" % (settings.script_name, settings.config_name))
 
     # Build dataloaders
