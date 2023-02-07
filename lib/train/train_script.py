@@ -83,12 +83,12 @@ def run(settings):
         actor = STARKSTActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings)
     elif settings.script_name == "stark_lightning_X_trt":
         objective = {'giou': giou_loss, 'l1': l1_loss}
-        loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT}
+        loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT} 
         actor = STARKLightningXtrtActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings)
     elif settings.script_name == "simtrack":
-        objective = {'giou': giou_loss, 'l1': l1_loss}
+        objective = {'giou': giou_loss, 'l1': l1_loss}  #计算此时的giou和L1-LOSS
         loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT}
-        actor = SimTrackActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings)
+        actor = SimTrackActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings) #进行训练
     else:
         raise ValueError("illegal script name")
 
@@ -96,8 +96,8 @@ def run(settings):
     #     raise ValueError("Deep supervision is not supported now.")
 
     # Optimizer, parameters, and learning rates
-    optimizer, lr_scheduler = get_optimizer_scheduler(net, cfg)
-    use_amp = getattr(cfg.TRAIN, "AMP", False)
+    optimizer, lr_scheduler = get_optimizer_scheduler(net, cfg) #？从net和cfg中获得optimizer, lr_scheduler（优化器和学习测略）
+    use_amp = getattr(cfg.TRAIN, "AMP", False) #SIMTRACK无此参数，其他模型有
     trainer = LTRTrainer(actor, [loader_train], optimizer, settings, lr_scheduler, use_amp=use_amp)
 
     # train process
