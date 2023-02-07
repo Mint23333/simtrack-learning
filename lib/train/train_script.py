@@ -18,7 +18,7 @@ from lib.train.actors import STARKLightningXtrtActor
 # for import modules
 import importlib
 
-#配置环境，建立对应模型的存储方法，并存储相关的参数
+#将之前得到的参数根据不同模型进行训练
 def run(settings): 
     settings.description = 'Training script for STARK-S, STARK-ST stage1, and STARK-ST stage2'
 
@@ -27,7 +27,7 @@ def run(settings):
         raise ValueError("%s doesn't exist." % settings.cfg_file)
     config_module = importlib.import_module("lib.config.%s.config" % settings.script_name) #将选择模型的config返回
     cfg = config_module.cfg #将该模型的cfg返回
-    config_module.update_config_from_file(settings.cfg_file)
+    config_module.update_config_from_file(settings.cfg_file) #该函数位于其对应模型的config文件内，作用为更新config
     if settings.local_rank in [-1, 0]:
         print("New configuration is shown below.")
         for key in cfg.keys():
@@ -35,14 +35,14 @@ def run(settings):
             print('\n')
 
     # update settings based on cfg
-    update_settings(settings, cfg)
+    update_settings(settings, cfg) 
 
     # Record the training log
     log_dir = os.path.join(settings.save_dir, 'logs') 
     if settings.local_rank in [-1, 0]:
         if not os.path.exists(log_dir):
             os.makedirs(log_dir) #递归创建多层目录
-    settings.log_file = os.path.join(log_dir, "%s-%s.log" % (settings.script_name, settings.config_name))
+    settings.log_file = os.path.join(log_dir, "%s-%s.log" % (settings.script_name, settings.config_name)) #在simtrack-config目录下建立log文件
 
     # Build dataloaders
     loader_train, loader_val = build_dataloaders(cfg, settings)
@@ -68,10 +68,10 @@ def run(settings):
         net = DDP(net, device_ids=[settings.local_rank], find_unused_parameters=True)
         settings.device = torch.device("cuda:%d" % settings.local_rank)
     else:
-        settings.device = torch.device("cuda:0")
-    settings.deep_sup = getattr(cfg.TRAIN, "DEEP_SUPERVISION", False)
+        settings.device = torch.device("cuda:0") #选择设备gpu0
+    settings.deep_sup = getattr(cfg.TRAIN, "DEEP_SUPERVISION", False) #将config文件中对应值返回
     settings.distill = getattr(cfg.TRAIN, "DISTILL", False)
-    settings.distill_loss_type = getattr(cfg.TRAIN, "DISTILL_LOSS_TYPE", "KL")
+    settings.distill_loss_type = getattr(cfg.TRAIN, "DISTILL_LOSS_TYPE", "KL") #KL?
     # Loss functions and Actors
     if settings.script_name == "stark_s" or settings.script_name == "stark_st1":
         objective = {'giou': giou_loss, 'l1': l1_loss}
