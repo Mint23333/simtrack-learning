@@ -104,15 +104,15 @@ def gen_config(config_file):
 
 
 def _update_config(base_cfg, exp_cfg):
-    if isinstance(base_cfg, dict) and isinstance(exp_cfg, edict):
-        for k, v in exp_cfg.items():
+    if isinstance(base_cfg, dict) and isinstance(exp_cfg, edict): #若base_cfg, exp_cfg都存在则继续执行
+        for k, v in exp_cfg.items(): #K对应属性名，v对应内容
             if k in base_cfg:
-                if not isinstance(v, dict):
+                if not isinstance(v, dict): #如果属性内容不一致，则取代原来的
                     base_cfg[k] = v
                 else:
-                    _update_config(base_cfg[k], v)
+                    _update_config(base_cfg[k], v) #若一致，则不变
             else:
-                raise ValueError("{} not exist in config.py".format(k))
+                raise ValueError("{} not exist in config.py".format(k)) #若属性名不存在，则报错
     else:
         return
 
@@ -120,7 +120,7 @@ def _update_config(base_cfg, exp_cfg):
 def update_config_from_file(filename):
     exp_config = None
     with open(filename) as f:
-        exp_config = edict(yaml.safe_load(f))
+        exp_config = edict(yaml.safe_load(f)) #将文件内属性及其对应内容存入exp_config
         _update_config(cfg, exp_config)
 
 
