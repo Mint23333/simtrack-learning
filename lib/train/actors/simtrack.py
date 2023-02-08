@@ -7,7 +7,7 @@ from lib.utils.merge import merge_template_search
 
 class SimTrackActor(BaseActor):
     """ Actor for training the STARK-S and STARK-ST(Stage1)"""
-    def __init__(self, net, objective, loss_weight, settings):
+    def __init__(self, net, objective, loss_weight, settings): #objective此时存储的为giou和L1-LOSS
         super().__init__(net, objective)
         self.loss_weight = loss_weight
         self.settings = settings
