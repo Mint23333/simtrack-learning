@@ -300,7 +300,7 @@ def build_box_head(cfg):
         hidden_dim = cfg.MODEL.HIDDEN_DIM
         mlp_head = MLP(hidden_dim, hidden_dim, 4, 3)  # dim_in, dim_hidden, dim_out, 3 layers
         return mlp_head
-    elif "CORNER" in cfg.MODEL.HEAD_TYPE:
+    elif "CORNER" in cfg.MODEL.HEAD_TYPE: #simtrack配置用的是这个
         if cfg.MODEL.BACKBONE.DILATION is False:
             stride = 16
         else:
