@@ -104,4 +104,4 @@ def run(settings):
     if settings.script_name in ["stark_st2", "stark_st2_plus_sp"]:
         trainer.train(cfg.TRAIN.EPOCH, load_latest=True, fail_safe=True, load_previous_ckpt=True)
     else:
-        trainer.train(cfg.TRAIN.EPOCH, load_latest=True, fail_safe=True)
+        trainer.train(cfg.TRAIN.EPOCH, load_latest=True, fail_safe=True) #该train函数位于base_train类中
