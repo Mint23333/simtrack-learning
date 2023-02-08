@@ -61,6 +61,7 @@ class BaseTrainer:
 
     def train(self, max_epochs, load_latest=False, fail_safe=True, load_previous_ckpt=False, distill=False):
         """Do training for the given number of epochs.
+            完成给定数量epoch的训练，并将相关参数保存
         args:
             max_epochs - Max number of training epochs,
             load_latest - Bool indicating whether to resume from latest epoch.
@@ -69,24 +70,24 @@ class BaseTrainer:
 
         epoch = -1
         num_tries = 1
-        for i in range(num_tries):
+        for i in range(num_tries):  #？只进行一次
             try:
-                if load_latest:
-                    self.load_checkpoint()
+                if load_latest: #调用时该参数为TRUE
+                    self.load_checkpoint() 
                 if load_previous_ckpt:
                     directory = '{}/{}'.format(self._checkpoint_dir, self.settings.project_path_prv)
                     self.load_state_dict(directory)
                 if distill:
                     directory_teacher = '{}/{}'.format(self._checkpoint_dir, self.settings.project_path_teacher)
                     self.load_state_dict(directory_teacher, distill=True)
-                for epoch in range(self.epoch+1, max_epochs+1):
+                for epoch in range(self.epoch+1, max_epochs+1): 
                     self.epoch = epoch
 
-                    self.train_epoch()
+                    self.train_epoch() #若该函数被子类调用时未重写，则报错，此处调用的是ltr_trainer中的train_epoch函数
 
                     if self.lr_scheduler is not None:
-                        if self.settings.scheduler_type != 'cosine':
-                            self.lr_scheduler.step()
+                        if self.settings.scheduler_type != 'cosine': #判断学习策略是不是cosine，simtrack的学习策略为step
+                            self.lr_scheduler.step() #调整学习率
                         else:
                             self.lr_scheduler.step(epoch - 1)
                     # only save the last 10 checkpoints
@@ -146,7 +147,7 @@ class BaseTrainer:
         os.rename(tmp_file_path, file_path)
 
     def load_checkpoint(self, checkpoint = None, fields = None, ignore_fields = None, load_constructor = False):
-        """Loads a network checkpoint file.
+        """Loads a network checkpoint file. 文件列出了所有保存的模型及其保存的参数，变量和对应关系
 
         Can be called in three different ways:
             load_checkpoint():
@@ -157,17 +158,18 @@ class BaseTrainer:
                 Loads the file from the given absolute path (str).
         """
 
-        net = self.actor.net.module if multigpu.is_multi_gpu(self.actor.net) else self.actor.net
-
+        net = self.actor.net.module if multigpu.is_multi_gpu(self.actor.net) else self.actor.net #是否采用多个GPU并行训练
+        #该actor为在run函数中的 actor = SimTrackActor    net.module此时指的是什么？
+        
         actor_type = type(self.actor).__name__
-        net_type = type(net).__name__
+        net_type = type(net).__name__ #返回net的类型
 
         if checkpoint is None:
             # Load most recent checkpoint
             checkpoint_list = sorted(glob.glob('{}/{}/{}_ep*.pth.tar'.format(self._checkpoint_dir,
-                                                                             self.settings.project_path, net_type)))
+                                                                             self.settings.project_path, net_type))) #列出路径并排序
             if checkpoint_list:
-                checkpoint_path = checkpoint_list[-1]
+                checkpoint_path = checkpoint_list[-1] #将最后一个作为路径
             else:
                 print('No matching checkpoint file found')
                 return
@@ -189,12 +191,12 @@ class BaseTrainer:
             raise TypeError
 
         # Load network
-        checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
+        checkpoint_dict = torch.load(checkpoint_path, map_location='cpu') #按照路径，在CPU中加载模型
 
         assert net_type == checkpoint_dict['net_type'], 'Network is not of correct type.'
 
         if fields is None:
-            fields = checkpoint_dict.keys()
+            fields = checkpoint_dict.keys() #返回该网络的属性名称
         if ignore_fields is None:
             ignore_fields = ['settings']
 
@@ -206,17 +208,17 @@ class BaseTrainer:
             if key in ignore_fields:
                 continue
             if key == 'net':
-                net.load_state_dict(checkpoint_dict[key])
+                net.load_state_dict(checkpoint_dict[key]) #用于将预训练的参数权重加载到新的模型之中 ？下面有一个名字一样的函数，但似乎这个函数不是
             elif key == 'optimizer':
-                self.optimizer.load_state_dict(checkpoint_dict[key])
+                self.optimizer.load_state_dict(checkpoint_dict[key]) #操作是将目前optimizer中的params参数填充到state dict中，然后用state dict中的state和params_group替换掉目前optimizer中的state和param_group
             else:
-                setattr(self, key, checkpoint_dict[key])
+                setattr(self, key, checkpoint_dict[key]) #对key对应的属性进行赋值
 
         # Set the net info
         if load_constructor and 'constructor' in checkpoint_dict and checkpoint_dict['constructor'] is not None:
             net.constructor = checkpoint_dict['constructor']
         if 'net_info' in checkpoint_dict and checkpoint_dict['net_info'] is not None:
-            net.info = checkpoint_dict['net_info']
+            net.info = checkpoint_dict['net_info'] 
 
         # Update the epoch in lr scheduler
         if 'epoch' in fields:
