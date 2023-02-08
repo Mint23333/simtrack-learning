@@ -102,8 +102,8 @@ class SimTrack(nn.Module):
 
 
 def build_simtrack(cfg):
-    backbone = build_backbone_simtrack(cfg)  # backbone and positional encoding are built together
-    box_head = build_box_head(cfg)
+    backbone = build_backbone_simtrack(cfg)  # backbone and positional encoding are built together 此时backbone为CLIPVIT这个类
+    box_head = build_box_head(cfg) #返回的是 Corner_Predictor这个类
     model = SimTrack(
         backbone,
         box_head,
