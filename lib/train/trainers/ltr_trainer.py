@@ -54,15 +54,15 @@ class LTRTrainer(BaseTrainer):
     def cycle_dataset(self, loader):
         """Do a cycle of training or validation."""
 
-        self.actor.train(loader.training)
+        self.actor.train(loader.training) #调用base_actor中train函数，一般在训练模型的代码段加入
         torch.set_grad_enabled(loader.training)
 
-        self._init_timing()
+        self._init_timing() #设置起始时间等
 
         for i, data in enumerate(loader, 1):
             # get inputs
             if self.move_data_to_gpu:
-                data = data.to(self.device)
+                data = data.to(self.device) #调用base_actor中to函数， Move the network to device
 
             data['epoch'] = self.epoch
             data['settings'] = self.settings
@@ -75,12 +75,12 @@ class LTRTrainer(BaseTrainer):
 
             # backward pass and update weights
             if loader.training:
-                self.optimizer.zero_grad()
+                self.optimizer.zero_grad() #随机梯度下降用，将梯度清零
                 if not self.use_amp:
-                    loss.backward()
-                    if self.settings.grad_clip_norm > 0:
-                        torch.nn.utils.clip_grad_norm_(self.actor.net.parameters(), self.settings.grad_clip_norm)
-                    self.optimizer.step()
+                    loss.backward() #求导
+                    if self.settings.grad_clip_norm > 0: #cfg中有该参数
+                        torch.nn.utils.clip_grad_norm_(self.actor.net.parameters(), self.settings.grad_clip_norm) #为了解决梯度爆炸的问题进行的梯度剪裁
+                    self.optimizer.step() #计算好梯度后更新优化器的参数
                 else:
                     self.scaler.scale(loss).backward()
                     self.scaler.step(self.optimizer)
@@ -98,13 +98,13 @@ class LTRTrainer(BaseTrainer):
         for loader in self.loaders:
             if self.epoch % loader.epoch_interval == 0:
                 # 2021.1.10 Set epoch
-                if isinstance(loader.sampler, DistributedSampler):
-                    loader.sampler.set_epoch(self.epoch)
-                self.cycle_dataset(loader)
+                if isinstance(loader.sampler, DistributedSampler): #判断是否是分布式
+                    loader.sampler.set_epoch(self.epoch) #每个epoch开始前要调用该函数
+                self.cycle_dataset(loader) 
 
-        self._stats_new_epoch()
+        self._stats_new_epoch()  #记录学习率
         if self.settings.local_rank in [-1, 0]:
-            self._write_tensorboard()
+            self._write_tensorboard() #将一个epoch的历史更新显示出来
 
     def _init_timing(self):
         self.num_frames = 0
@@ -147,21 +147,21 @@ class LTRTrainer(BaseTrainer):
         for loader in self.loaders:
             if loader.training:
                 try:
-                    lr_list = self.lr_scheduler.get_lr()
+                    lr_list = self.lr_scheduler.get_lr() #获取当前epoch的学习率
                 except:
                     lr_list = self.lr_scheduler._get_lr(self.epoch)
                 for i, lr in enumerate(lr_list):
                     var_name = 'LearningRate/group{}'.format(i)
                     if var_name not in self.stats[loader.name].keys():
                         self.stats[loader.name][var_name] = StatValue()
-                    self.stats[loader.name][var_name].update(lr)
+                    self.stats[loader.name][var_name].update(lr) #调用StatValue中update函数，将此时的学习率加入记录
 
         for loader_stats in self.stats.values():
             if loader_stats is None:
                 continue
             for stat_value in loader_stats.values():
                 if hasattr(stat_value, 'new_epoch'):
-                    stat_value.new_epoch()
+                    stat_value.new_epoch() #调用AverageMeter中的new_epoch()，记录本次epoch中的参数，并重置等待进入下一个epoch
 
     def _write_tensorboard(self):
         if self.epoch == 1:
