@@ -58,7 +58,7 @@ def run(settings):
     elif settings.script_name == "stark_lightning_X_trt":
         net = build_stark_lightning_x_trt(cfg, phase="train")
     elif settings.script_name == "simtrack":
-        net = build_simtrack(cfg)
+        net = build_simtrack(cfg) #net含有backbone，Corner_Predictor，及 aux_loss，head_type俩参数
     else:
         raise ValueError("illegal script name")
 
@@ -88,7 +88,7 @@ def run(settings):
     elif settings.script_name == "simtrack":
         objective = {'giou': giou_loss, 'l1': l1_loss}  #计算此时的giou和L1-LOSS
         loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT}
-        actor = SimTrackActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings) #进行训练
+        actor = SimTrackActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings) 
     else:
         raise ValueError("illegal script name")
 
