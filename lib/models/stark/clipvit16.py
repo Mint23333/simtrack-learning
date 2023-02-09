@@ -67,17 +67,17 @@ class CLIPVIT(nn.Module):
         self.tz = template_sz // window_sz
         self.sz = search_sz // window_sz
         self.wz = window_sz
-        with torch.no_grad():
+        with torch.no_grad(): #在该模块下，所有计算得出的tensor的requires_grad都自动设置为False
             y1 = torch.arange(0, self.wz * self.tz, self.wz).unsqueeze(1).repeat(1, self.tz).reshape(-1)
             y2 = y1.clone() + self.wz
             x1 = torch.arange(0, self.wz * self.tz, self.wz).unsqueeze(0).repeat(self.tz, 1).reshape(-1)
-            x2 = x1.clone() + self.wz
-            self.all_anchor = torch.stack([x1, y1, x2, y2], 1).unsqueeze(0).cuda() / (self.wz * self.tz)
-            self.all_pos = torch.stack([(x1 + x2) / 2, (y1 + y2) / 2], 1).unsqueeze(0).cuda() / (self.wz * self.tz)
+            x2 = x1.clone() + self.wz     #分别计算一个窗的左下和右上坐标
+            self.all_anchor = torch.stack([x1, y1, x2, y2], 1).unsqueeze(0).cuda() / (self.wz * self.tz) #将分好的几个窗口进行连接
+            self.all_pos = torch.stack([(x1 + x2) / 2, (y1 + y2) / 2], 1).unsqueeze(0).cuda() / (self.wz * self.tz) #将其对应位置坐标连接
 
-        self.shift_flag = ((template_sz - foveal_sz) % (foveal_sz * 2) == 0)
-        self.foveal_sz = foveal_sz // self.wz
-
+        self.shift_flag = ((template_sz - foveal_sz) % (foveal_sz * 2) == 0) #true
+        self.foveal_sz = foveal_sz // self.wz #窗口的数量
+ 
 
     def forward(self, input):
         xt0, x0, annot = input
