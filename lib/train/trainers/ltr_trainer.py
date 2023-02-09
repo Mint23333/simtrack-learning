@@ -68,7 +68,7 @@ class LTRTrainer(BaseTrainer):
             data['settings'] = self.settings
             # forward pass
             if not self.use_amp:
-                loss, stats = self.actor(data)
+                loss, stats = self.actor(data) #相当于调用了Simtrack里面的__call__函数，返回的是损失和详细的损失情况
             else:
                 with autocast():
                     loss, stats = self.actor(data)
@@ -88,9 +88,9 @@ class LTRTrainer(BaseTrainer):
 
             # update statistics
             batch_size = data['template_images'].shape[loader.stack_dim]
-            self._update_stats(stats, batch_size, loader)
+            self._update_stats(stats, batch_size, loader) #更新一下模板
 
-            # print statistics
+            # print statistics 将更新后的模板信息写出来
             self._print_stats(i, loader, batch_size)
 
     def train_epoch(self):
@@ -115,7 +115,7 @@ class LTRTrainer(BaseTrainer):
         # Initialize stats if not initialized yet
         if loader.name not in self.stats.keys() or self.stats[loader.name] is None:
             self.stats[loader.name] = OrderedDict({name: AverageMeter() for name in new_stats.keys()})
-
+        
         for name, val in new_stats.items():
             if name not in self.stats[loader.name].keys():
                 self.stats[loader.name][name] = AverageMeter()
