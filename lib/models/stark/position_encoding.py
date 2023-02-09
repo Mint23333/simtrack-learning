@@ -16,7 +16,7 @@ class PositionEmbeddingSine(nn.Module):
     def __init__(self, num_pos_feats=64, temperature=10000, normalize=False, scale=None):
         super().__init__()
         self.num_pos_feats = num_pos_feats
-        self.temperature = temperature
+        self.temperature = temperature #温度参数，用于softmax中，t越大，结果越平滑
         self.normalize = normalize
         if scale is not None and normalize is False:
             raise ValueError("normalize should be True if scale is passed")
@@ -90,8 +90,8 @@ class PositionEmbeddingNone(nn.Module):
 
 
 def build_position_encoding(cfg):
-    N_steps = cfg.MODEL.HIDDEN_DIM // 2
-    if cfg.MODEL.POSITION_EMBEDDING in ('v2', 'sine'):
+    N_steps = cfg.MODEL.HIDDEN_DIM // 2 
+    if cfg.MODEL.POSITION_EMBEDDING in ('v2', 'sine'): #simtrack用的是这个
         # TODO find a better way of exposing other arguments
         position_embedding = PositionEmbeddingSine(N_steps, normalize=True)
     elif cfg.MODEL.POSITION_EMBEDDING in ('v3', 'learned'):
