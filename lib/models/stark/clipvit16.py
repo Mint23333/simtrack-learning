@@ -192,6 +192,6 @@ class CLIPVIT(nn.Module):
         """
         self.training = mode
         for module in self.children():
-            module.train(mode)
+            module.train(mode) #启用 BatchNormalization 和 Dropout
         # self.freeze_layer()
         return self
