@@ -144,7 +144,7 @@ def build_dataloaders(cfg, settings):
 
 
 def get_optimizer_scheduler(net, cfg):
-    train_cls = getattr(cfg.TRAIN, "TRAIN_CLS", False)
+    train_cls = getattr(cfg.TRAIN, "TRAIN_CLS", False) # train_cls参数为false
     if train_cls:
         print("Only training classification head. Learnable parameters are shown below.")
         param_dicts = [
@@ -158,26 +158,26 @@ def get_optimizer_scheduler(net, cfg):
                 print(n)
     else:
         param_dicts = [
-            {"params": [p for n, p in net.named_parameters() if "backbone" not in n and p.requires_grad]},
-            {"params": [p for n, p in net.named_parameters() if "pos_fc" in n and p.requires_grad]},
+            {"params": [p for n, p in net.named_parameters() if "backbone" not in n and p.requires_grad]}, #n是每层的名称，p是每层的参数，若不是backbone在该层且需保留梯度信息，则返回其对应的属性和值
+            {"params": [p for n, p in net.named_parameters() if "pos_fc" in n and p.requires_grad]}, #若是pos_fc这一层且需保留梯度信息，则返回其对应的属性和值
             {
-                "params": [p for n, p in net.named_parameters() if "backbone" in n and p.requires_grad and 'pos_fc' not in n],
-                "lr": cfg.TRAIN.LR * cfg.TRAIN.BACKBONE_MULTIPLIER,
+                "params": [p for n, p in net.named_parameters() if "backbone" in n and p.requires_grad and 'pos_fc' not in n], #若backbone在，pos不在这一层且需保留梯度信息，则返回其对应的属性和值
+                "lr": cfg.TRAIN.LR * cfg.TRAIN.BACKBONE_MULTIPLIER, #学习率的更新方法？
             },
         ]
         if is_main_process():
             print("Learnable parameters are shown below.")
             for n, p in net.named_parameters():
                 if p.requires_grad:
-                    print(n)
+                    print(n) 
 
     if cfg.TRAIN.OPTIMIZER == "ADAMW":
         optimizer = torch.optim.AdamW(param_dicts, lr=cfg.TRAIN.LR,
-                                      weight_decay=cfg.TRAIN.WEIGHT_DECAY)
+                                      weight_decay=cfg.TRAIN.WEIGHT_DECAY) #选择优化算法创建优化器
     else:
         raise ValueError("Unsupported Optimizer")
     if cfg.TRAIN.SCHEDULER.TYPE == 'step':
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, cfg.TRAIN.LR_DROP_EPOCH)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, cfg.TRAIN.LR_DROP_EPOCH) #设置优化策略
     elif cfg.TRAIN.SCHEDULER.TYPE == "Mstep":
         lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
                                                             milestones=cfg.TRAIN.SCHEDULER.MILESTONES,
