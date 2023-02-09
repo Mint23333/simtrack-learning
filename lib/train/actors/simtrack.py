@@ -27,7 +27,7 @@ class SimTrackActor(BaseActor):
         out_dict = self.forward_pass(data, run_box_head=True, run_cls_head=False)
 
         # process the groundtruth
-        gt_bboxes = data['search_anno']  # (Ns, batch, 4) (x1,y1,w,h)
+        gt_bboxes = data['search_anno']  # (Ns, batch, 4) (x1,y1,w,h) #返回的是准确率
 
         # compute losses
         loss, status = self.compute_losses(out_dict, gt_bboxes[0])
@@ -55,14 +55,14 @@ class SimTrackActor(BaseActor):
         # seq_dict = merge_template_search(feat_dict_list)
         out_dict, _, _ = self.net(seq_dict=feat_dict_list, mode="head", run_box_head=run_box_head, run_cls_head=run_cls_head)
         # out_dict: (B, N, C), outputs_coord: (1, B, N, C), target_query: (1, B, N, C)
-        return out_dict
+        return out_dict #输出的预测区域和准确率
 
     def compute_losses(self, pred_dict, gt_bbox, return_status=True):
         # Get boxes
         pred_boxes = pred_dict['pred_boxes']
-        if torch.isnan(pred_boxes).any():
+        if torch.isnan(pred_boxes).any(): #若输入为空，则报错
             raise ValueError("Network outputs is NAN! Stop Training")
-        num_queries = pred_boxes.size(1)
+        num_queries = pred_boxes.size(1) 
         pred_boxes_vec = box_cxcywh_to_xyxy(pred_boxes).view(-1, 4)  # (B,N,4) --> (BN,4) (x1,y1,x2,y2)
         gt_boxes_vec = box_xywh_to_xyxy(gt_bbox)[:, None, :].repeat((1, num_queries, 1)).view(-1, 4).clamp(min=0.0, max=1.0)  # (B,4) --> (B,1,4) --> (B,N,4)
         # compute giou and iou
@@ -72,8 +72,8 @@ class SimTrackActor(BaseActor):
             giou_loss, iou = torch.tensor(0.0).cuda(), torch.tensor(0.0).cuda()
         # compute l1 loss
         l1_loss = self.objective['l1'](pred_boxes_vec, gt_boxes_vec)  # (BN,4) (BN,4)
-        # weighted sum
-        loss = self.loss_weight['giou'] * giou_loss + self.loss_weight['l1'] * l1_loss
+        # weighted sum 计算损失，其中loss_weight在配置里
+        loss = self.loss_weight['giou'] * giou_loss + self.loss_weight['l1'] * l1_loss 
         if return_status:
             # status for log
             mean_iou = iou.detach().mean()
