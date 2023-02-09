@@ -96,7 +96,7 @@ def run(settings):
     #     raise ValueError("Deep supervision is not supported now.")
 
     # Optimizer, parameters, and learning rates
-    optimizer, lr_scheduler = get_optimizer_scheduler(net, cfg) #？从net和cfg中获得optimizer, lr_scheduler（优化器和学习测略）
+    optimizer, lr_scheduler = get_optimizer_scheduler(net, cfg) #函数在base_functions中，
     use_amp = getattr(cfg.TRAIN, "AMP", False) #SIMTRACK无此参数，其他模型有
     trainer = LTRTrainer(actor, [loader_train], optimizer, settings, lr_scheduler, use_amp=use_amp)
 
