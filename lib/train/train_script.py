@@ -45,7 +45,7 @@ def run(settings):
     settings.log_file = os.path.join(log_dir, "%s-%s.log" % (settings.script_name, settings.config_name)) #在simtrack-config目录下建立log文件
 
     # Build dataloaders
-    loader_train, loader_val = build_dataloaders(cfg, settings)
+    loader_train, loader_val = build_dataloaders(cfg, settings) #样本的创建
 
     if "RepVGG" in cfg.MODEL.BACKBONE.TYPE or "swin" in cfg.MODEL.BACKBONE.TYPE or "LightTrack" in cfg.MODEL.BACKBONE.TYPE:
         cfg.ckpt_dir = settings.save_dir
@@ -63,11 +63,11 @@ def run(settings):
         raise ValueError("illegal script name")
 
     # wrap networks to distributed one
-    net.cuda()
+    net.cuda() #把模型加载到GPU上
     if settings.local_rank != -1:
         net = DDP(net, device_ids=[settings.local_rank], find_unused_parameters=True)
         settings.device = torch.device("cuda:%d" % settings.local_rank)
-    else:
+    else: #simtrack的local_rank为-1
         settings.device = torch.device("cuda:0") #选择设备gpu0
     settings.deep_sup = getattr(cfg.TRAIN, "DEEP_SUPERVISION", False) #将config文件中对应值返回
     settings.distill = getattr(cfg.TRAIN, "DISTILL", False)
@@ -86,7 +86,7 @@ def run(settings):
         loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT} 
         actor = STARKLightningXtrtActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings)
     elif settings.script_name == "simtrack":
-        objective = {'giou': giou_loss, 'l1': l1_loss}  #计算此时的giou和L1-LOSS
+        objective = {'giou': giou_loss, 'l1': l1_loss}  #计算此时的giou-loss和L1-LOSS
         loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT}
         actor = SimTrackActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings) 
     else:
