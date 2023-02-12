@@ -77,14 +77,14 @@ def names2datasets(name_list: list, settings, image_loader):
 
 def build_dataloaders(cfg, settings):
     # Data transform
-    transform_joint = tfm.Transform(tfm.ToGrayscale(probability=0.05),
-                                    tfm.RandomHorizontalFlip(probability=0.5))
+    transform_joint = tfm.Transform(tfm.ToGrayscale(probability=0.05), #5%图像转化为灰度
+                                    tfm.RandomHorizontalFlip(probability=0.5)) #50%的图片被水平翻转
 
-    transform_train = tfm.Transform(tfm.ToTensorAndJitter(0.2),
-                                    tfm.RandomHorizontalFlip_Norm(probability=0.5),
-                                    tfm.Normalize(mean=cfg.DATA.MEAN, std=cfg.DATA.STD))
+    transform_train = tfm.Transform(tfm.ToTensorAndJitter(0.2), #转化为张量和抖动亮度
+                                    tfm.RandomHorizontalFlip_Norm(probability=0.5), #50%的图片水平翻转
+                                    tfm.Normalize(mean=cfg.DATA.MEAN, std=cfg.DATA.STD)) #标准化图片
 
-    transform_val = tfm.Transform(tfm.ToTensor(),
+    transform_val = tfm.Transform(tfm.ToTensor(), #转化为张量
                                   tfm.Normalize(mean=cfg.DATA.MEAN, std=cfg.DATA.STD))
 
     # The tracking pairs processing module
@@ -120,13 +120,13 @@ def build_dataloaders(cfg, settings):
                                             samples_per_epoch=cfg.DATA.TRAIN.SAMPLE_PER_EPOCH,
                                             max_gap=cfg.DATA.MAX_SAMPLE_INTERVAL, num_search_frames=settings.num_search,
                                             num_template_frames=settings.num_template, processing=data_processing_train,
-                                            frame_sample_mode=sampler_mode, train_cls=train_cls)
+                                            frame_sample_mode=sampler_mode, train_cls=train_cls) #从数据集中选出模板形成一个batch
 
-    train_sampler = DistributedSampler(dataset_train) if settings.local_rank != -1 else None
-    shuffle = False if settings.local_rank != -1 else True
+    train_sampler = DistributedSampler(dataset_train) if settings.local_rank != -1 else None #返回None
+    shuffle = False if settings.local_rank != -1 else True #True
 
     loader_train = LTRLoader('train', dataset_train, training=True, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=shuffle,
-                             num_workers=cfg.TRAIN.NUM_WORKER, drop_last=True, stack_dim=1, sampler=train_sampler)
+                             num_workers=cfg.TRAIN.NUM_WORKER, drop_last=True, stack_dim=1, sampler=train_sampler) #可以根据stack_dim将数据集划分为不同的batch
 
     # Validation samplers and loaders
     dataset_val = sampler.TrackingSampler(datasets=names2datasets(cfg.DATA.VAL.DATASETS_NAME, settings, opencv_loader),
