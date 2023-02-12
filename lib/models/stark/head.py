@@ -6,20 +6,20 @@ from lib.models.stark.repvgg import RepVGGBlock
 # import time
 
 
-def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1,
+def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1,  #输入张量的channels数,期望的输出channels，卷积核大小，步长，填充，不采用空洞卷积
          freeze_bn=False):
     if freeze_bn:
         return nn.Sequential(
             nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
                       padding=padding, dilation=dilation, bias=True),
             FrozenBatchNorm2d(out_planes),
-            nn.ReLU(inplace=True))
+            nn.ReLU(inplace=True)) 
     else:
         return nn.Sequential(
             nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
                       padding=padding, dilation=dilation, bias=True),
-            nn.BatchNorm2d(out_planes),
-            nn.ReLU(inplace=True))
+            nn.BatchNorm2d(out_planes), #归一化处理，使得数据在进行Relu之前不会因为数据过大而导致网络性能的不稳定
+            nn.ReLU(inplace=True)) #激活函数
 
 
 class Corner_Predictor(nn.Module):
@@ -31,14 +31,14 @@ class Corner_Predictor(nn.Module):
         self.stride = stride
         self.img_sz = self.feat_sz * self.stride
         self.channel = channel
-        '''top-left corner'''
+        '''top-left corner 左上角'''
         self.conv1_tl = conv(inplanes, channel, freeze_bn=freeze_bn)
         self.conv2_tl = conv(channel, channel // 2, freeze_bn=freeze_bn)
         self.conv3_tl = conv(channel // 2, channel // 4, freeze_bn=freeze_bn)
         self.conv4_tl = conv(channel // 4, channel // 8, freeze_bn=freeze_bn)
-        self.conv5_tl = nn.Conv2d(channel // 8, 1, kernel_size=1)
+        self.conv5_tl = nn.Conv2d(channel // 8, 1, kernel_size=1) #实现二维卷积
 
-        '''bottom-right corner'''
+        '''bottom-right corner 右下角'''
         self.conv1_br = conv(inplanes, channel, freeze_bn=freeze_bn)
         self.conv2_br = conv(channel, channel // 2, freeze_bn=freeze_bn)
         self.conv3_br = conv(channel // 2, channel // 4, freeze_bn=freeze_bn)
@@ -83,7 +83,7 @@ class Corner_Predictor(nn.Module):
         return score_map_tl, score_map_br
 
     def soft_argmax(self, score_map, return_dist=False, softmax=True):
-        """ get soft-argmax coordinate for a given heatmap """
+        """ get soft-argmax coordinate for a given heatmap  得到坐标的概率值"""
         score_vec = score_map.view((-1, self.feat_sz * self.feat_sz))  # (batch, feat_sz * feat_sz)
         prob_vec = nn.functional.softmax(score_vec, dim=1)
         exp_x = torch.sum((self.coord_x * prob_vec), dim=1)
