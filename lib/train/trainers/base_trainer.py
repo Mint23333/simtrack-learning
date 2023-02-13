@@ -208,7 +208,7 @@ class BaseTrainer:
             if key in ignore_fields:
                 continue
             if key == 'net':
-                net.load_state_dict(checkpoint_dict[key]) #用于将预训练的参数权重加载到新的模型之中 ？下面有一个名字一样的函数，但似乎这个函数不是
+                net.load_state_dict(checkpoint_dict[key]) #用于将预训练的参数权重加载到新的模型之中 
             elif key == 'optimizer':
                 self.optimizer.load_state_dict(checkpoint_dict[key]) #操作是将目前optimizer中的params参数填充到state dict中，然后用state dict中的state和params_group替换掉目前optimizer中的state和param_group
             else:
