@@ -82,7 +82,7 @@ class CLIPVIT(nn.Module):
     def forward(self, input):
         xt0, x0, annot = input
         x = self.visual.conv1(x0)
-        xt = self.visual.conv1(xt0)
+        xt = self.visual.conv1(xt0) #搜索区域和范例都经过一层卷积
         bz_ = xt0.size(0)
         H = int(x.shape[2])
         W = H
@@ -90,9 +90,9 @@ class CLIPVIT(nn.Module):
         Ht = int(xt.shape[2])
         Wt = Ht
 
-        cur_anchor = self.all_anchor.repeat(bz_, 1, 1).reshape(-1, 4)
-        gt_boxes_vec = box_xywh_to_xyxy(annot).unsqueeze(1).repeat(1, self.tz ** 2, 1).view(-1, 4).clamp(min=0.0, max=1.0)
-        iou_cur = iou_overlaps2(cur_anchor, gt_boxes_vec)['iou']
+        cur_anchor = self.all_anchor.repeat(bz_, 1, 1).reshape(-1, 4) #竖向排序
+        gt_boxes_vec = box_xywh_to_xyxy(annot).unsqueeze(1).repeat(1, self.tz ** 2, 1).view(-1, 4).clamp(min=0.0, max=1.0) #相交区域区域的向量
+        iou_cur = iou_overlaps2(cur_anchor, gt_boxes_vec)['iou'] #iou值，相当于Rij
         iou_cur_re = (iou_cur.reshape(bz_, self.tz ** 2) + 1) / 2
 
 
@@ -108,54 +108,54 @@ class CLIPVIT(nn.Module):
             xts = xt0[:, :, pad_t:-pad_t, pad_t:-pad_t]
             xtsp = self.visual.conv1(xts)
         xtsp = xtsp.reshape(bz_, C, -1)
-        xtsp = xtsp.permute(0, 2, 1)
+        xtsp = xtsp.permute(0, 2, 1) #中心凹窗编码，无位置编码
         '''end foveal window'''
 
         x = x.reshape(x.shape[0], x.shape[1], -1)
         x = x.permute(0, 2, 1)
         xt = xt.reshape(xt.shape[0], xt.shape[1], -1)
-        xt = xt.permute(0, 2, 1)
+        xt = xt.permute(0, 2, 1) #临时模板的编码
 
         # import pdb
         # pdb.set_trace()
-        pos_H = int(math.sqrt(self.visual.positional_embedding[1:].size(0)))
-        pos_embeds = F.interpolate(
+        pos_H = int(math.sqrt(self.visual.positional_embedding[1:].size(0))) #返回位置编码大小的平方根
+        pos_embeds = F.interpolate( 
             self.visual.positional_embedding[1:].reshape(1, pos_H, pos_H, -1).permute(0, 3, 1, 2), size=(H, W),
-            mode="bilinear")
+            mode="bilinear") #对重塑过的位置编码进行采样，采样算法为bilinear
 
         '''distinguashable position embedding'''
         iou_cur_re = iou_cur_re.reshape(-1, 1)
         all_pos = self.all_pos.repeat(bz_, 1, 1).reshape(-1, 2)
-        input_pos = torch.cat([iou_cur_re, all_pos], 1)
-        pos_embedt = self.pos_fc(input_pos.to(x.dtype)).reshape(bz_, self.tz**2, -1) * 2 - 1
+        input_pos = torch.cat([iou_cur_re, all_pos], 1) #将iou和凹窗的位置坐标连结
+        pos_embedt = self.pos_fc(input_pos.to(x.dtype)).reshape(bz_, self.tz**2, -1) * 2 - 1 #更新位置编码
         pos_embedt = pos_embedt.reshape(bz_, self.tz, self.tz, -1).permute(0, 3, 1, 2)
 
 
         pad_pos_t1 = torch.zeros([bz_, C, (self.tz + 1), (self.tz + 1)], dtype=x.dtype, device=x.device)
         pad_pos_t2 = torch.zeros([bz_, C, (self.tz + 1), (self.tz + 1)], dtype=x.dtype, device=x.device)
-        pad_pos_t1[:, :, :self.tz, :self.tz] = pos_embedt
-        pad_pos_t2[:, :, 1:, 1:] = pos_embedt
+        pad_pos_t1[:, :, :self.tz, :self.tz] = pos_embedt 
+        pad_pos_t2[:, :, 1:, 1:] = pos_embedt 
         pad_t = (self.tz - self.foveal_sz) // 2 + 1
         pad_pos_tsp = (pad_pos_t1 + pad_pos_t2)[:, :, pad_t:(pad_t + self.foveal_sz), pad_t:(pad_t + self.foveal_sz)] / 2
 
-        pos_embedt = pos_embedt.reshape(bz_, -1, Ht * Wt).permute(0, 2, 1).to(torch.float32)
-        pos_embeds = pos_embeds.reshape(1, -1, H * W).permute(0, 2, 1).to(torch.float32)
-        pad_pos_tsp = pad_pos_tsp.reshape(bz_, -1, self.foveal_sz ** 2).permute(0, 2, 1).to(torch.float32)
+        pos_embedt = pos_embedt.reshape(bz_, -1, Ht * Wt).permute(0, 2, 1).to(torch.float32) #更新范例和凹窗的位置编码
+        pos_embeds = pos_embeds.reshape(1, -1, H * W).permute(0, 2, 1).to(torch.float32) #搜索区域的位置编码
+        pad_pos_tsp = pad_pos_tsp.reshape(bz_, -1, self.foveal_sz ** 2).permute(0, 2, 1).to(torch.float32) #凹窗的位置编码
         '''end position embedding'''
 
 
-        xtsp = xtsp + pad_pos_tsp
+        xtsp = xtsp + pad_pos_tsp #凹窗+位置编码
 
-        pos_embeds = torch.cat([self.visual.positional_embedding[0].reshape(1, 1, x.shape[2]), pos_embeds], dim=1)
+        pos_embeds = torch.cat([self.visual.positional_embedding[0].reshape(1, 1, x.shape[2]), pos_embeds], dim=1) #位置编码加采样后的位置编码
 
-        xt = xt + pos_embedt
+        xt = xt + pos_embedt #范例+位置
 
         x = torch.cat([self.visual.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1],
                                                                                    dtype=x.dtype, device=x.device), x],
                       dim=1)
-        x = x + pos_embeds.to(x.dtype)
+        x = x + pos_embeds.to(x.dtype) #搜索区域+位置
 
-        x = torch.cat([xt, x, xtsp], dim=1)
+        x = torch.cat([xt, x, xtsp], dim=1) #范例，搜索，凹窗及其位置
 
 
 
@@ -167,7 +167,7 @@ class CLIPVIT(nn.Module):
 
         x = self.visual.ln_post(x)
 
-        return x[:, 0:-(self.foveal_sz ** 2)]
+        return x[:, 0:-(self.foveal_sz ** 2)] #接下来输入预测头
 
 
     @property
