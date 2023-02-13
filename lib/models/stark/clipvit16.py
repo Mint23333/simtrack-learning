@@ -121,7 +121,7 @@ class CLIPVIT(nn.Module):
         pos_H = int(math.sqrt(self.visual.positional_embedding[1:].size(0))) #返回位置编码大小的平方根
         pos_embeds = F.interpolate( 
             self.visual.positional_embedding[1:].reshape(1, pos_H, pos_H, -1).permute(0, 3, 1, 2), size=(H, W),
-            mode="bilinear") #对重塑过的位置编码进行采样，采样算法为bilinear
+            mode="bilinear") #对重塑过的位置编码进行下采样，采样算法为bilinear
 
         '''distinguashable position embedding'''
         iou_cur_re = iou_cur_re.reshape(-1, 1)
